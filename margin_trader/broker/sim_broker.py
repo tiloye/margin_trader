@@ -6,7 +6,7 @@ import pandas as pd
 
 from margin_trader.broker.broker import Broker
 from margin_trader.broker.fill import Fill
-from margin_trader.broker.order import Order, OrderManager, ReverseOrder
+from margin_trader.broker.order import CoverOrder, Order, OrderManager, ReverseOrder
 from margin_trader.broker.position import (
     HedgePositionManager,
     NetPositionManager,
@@ -251,6 +251,12 @@ class SimBroker(Broker, EventListener):
             if isinstance(order, ReverseOrder):
                 self.__submit(order)
                 executed_orders.append(order_id)
+            elif isinstance(order, CoverOrder):
+                corder = order.cover_order
+                price = self.data_handler.get_latest_price(corder.symbol, "high")
+                if price >= corder.price:
+                    self.execute_order(corder)
+                    executed_orders.append(order_id)
             else:
                 if order.order_type == OrderType.MARKET:
                     self.__submit(order)
